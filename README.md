@@ -85,6 +85,8 @@ Abrilo con cualquier editor de texto. Cada línea es `clave: valor` y las línea
 | `color_fondo_oscuro`, `color_fondo_claro` | Color de fondo en cada modo |
 | `color_texto_oscuro`, `color_texto_claro` | Color de texto en cada modo |
 | `color_acento` | Color de botones y menú activo |
+| `titulos_tamano` | Tamaño de los títulos en porcentaje (100 = normal). Útil para fuentes tipo pincel, que se ven chicas |
+| `titulos_peso` | Grosor de los títulos (400 a 700). Si la fuente solo tiene 400, usá 400 para que no se vea dentada |
 | `fuente_titulos`, `fuente_texto` | Nombre de la tipografía tal como figura en [fonts.google.com](https://fonts.google.com) |
 | `cabecera` | Siempre en una fila, del alto del logo: `centrada` (menú al centro) o `lateral` (menú a la derecha) |
 | `inicio_titulo`, `inicio_texto` | Texto de bienvenida opcional (por defecto vacío: el inicio muestra solo las portadas) |

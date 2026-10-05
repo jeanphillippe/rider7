@@ -35,6 +35,11 @@ color_acento: #e8b04a
 # Tipografías de Google Fonts (escribí el nombre tal cual aparece en fonts.google.com)
 fuente_titulos: Playfair Display
 fuente_texto: Inter
+# Tamaño de los títulos en porcentaje (100 = normal). Para fuentes tipo pincel o finas probá 130 a 160
+titulos_tamano: 100
+# Grosor de los títulos: 400 (normal) a 700 (negrita). Muchas fuentes decorativas solo tienen 400:
+# usá 400 para que no se vean dentadas
+titulos_peso: 600
 
 # Cabecera (siempre en una fila, del alto del logo):
 #   centrada = logo a la izquierda y menú al centro | lateral = logo a la izquierda y menú a la derecha

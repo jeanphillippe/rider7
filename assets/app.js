@@ -16,7 +16,7 @@
     color_fondo_oscuro: '#0f0f12', color_fondo_claro: '#f6f3ee',
     color_texto_oscuro: '#f2efe9', color_texto_claro: '#1b1a18',
     color_acento: '#e8b04a',
-    fuente_titulos: 'Playfair Display', fuente_texto: 'Inter',
+    fuente_titulos: 'Playfair Display', fuente_texto: 'Inter', titulos_tamano: '100', titulos_peso: '600',
     cabecera: 'centrada',
     inicio_titulo: '', inicio_texto: '', inicio_boton: 'Entrar',
     paginas: 'auto', tapa: 'si', tapa_dura: 'no', velocidad: '800', desenfoque: '40', color_hoja: '#ffffff',
@@ -146,6 +146,8 @@
     root.setProperty('--blur', num(c.desenfoque, 40) + 'px');
     root.setProperty('--logo-h', num(c.logo_alto, 48) + 'px');
     root.setProperty('--font-title', '"' + c.fuente_titulos + '", Georgia, serif');
+    root.setProperty('--title-scale', String(Math.min(4, Math.max(0.3, num(c.titulos_tamano, 100) / 100))));
+    root.setProperty('--title-weight', String(Math.round(Math.min(900, Math.max(100, num(c.titulos_peso, 600))))));
     root.setProperty('--font-body', '"' + c.fuente_texto + '", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif');
     loadFont(c.fuente_titulos);
     if (c.fuente_texto !== c.fuente_titulos) loadFont(c.fuente_texto);
@@ -897,10 +899,15 @@
     });
     matchMedia('(prefers-color-scheme: light)').addEventListener('change', updateLogo);
 
-    var stage = $('.book-stage');
-    stage.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') wakeArrows(); });
-    stage.addEventListener('pointerdown', wakeArrows);
-    stage.addEventListener('touchstart', wakeArrows, { passive: true });
+    // Al tocar una flecha se ve completa 2 segundos; deslizar sobre el libro no la muestra
+    $$('.book-arrow').forEach(function (btn) {
+      var t = null;
+      btn.addEventListener('pointerdown', function () {
+        btn.classList.add('touched');
+        clearTimeout(t);
+        t = setTimeout(function () { btn.classList.remove('touched'); }, 2000);
+      });
+    });
 
     $('.book-arrow.prev').addEventListener('click', function () { if (state.flip) state.flip.flipPrev(); });
     $('.book-arrow.next').addEventListener('click', function () { if (state.flip) state.flip.flipNext(); });
