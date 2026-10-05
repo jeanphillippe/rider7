@@ -1,0 +1,106 @@
+#  ==========================================================
+#   RIDER7 · Configuración del sitio
+#  ==========================================================
+#   Formato:   clave: valor
+#   Las líneas que empiezan con # son comentarios (no hacen nada).
+#   Para dejar algo vacío, borrá el valor y dejá solo "clave:".
+#   Guardá este archivo como texto plano (UTF-8).
+#  ==========================================================
+
+
+#  ---------- Datos generales ----------
+titulo: Rider7
+descripcion: Catálogos, revistas y galerías en formato libro.
+logo: logo.png
+# Logo alternativo para modo claro (opcional). Si lo dejás vacío se usa el mismo.
+logo_claro:
+# Alto del logo en píxeles
+logo_alto: 48
+# Ícono de la pestaña del navegador (opcional, por defecto usa el logo)
+favicon:
+
+
+#  ---------- Apariencia ----------
+# modo: oscuro | claro | auto  (auto = según el sistema del visitante)
+modo: oscuro
+# Mostrar el botón para cambiar entre claro y oscuro: si | no
+selector_modo: si
+
+color_fondo_oscuro: #0f0f12
+color_fondo_claro: #f6f3ee
+color_texto_oscuro: #f2efe9
+color_texto_claro: #1b1a18
+color_acento: #e8b04a
+
+# Tipografías de Google Fonts (escribí el nombre tal cual aparece en fonts.google.com)
+fuente_titulos: Playfair Display
+fuente_texto: Inter
+
+# Cabecera: centrada (logo arriba y menú abajo) | lateral (logo a la izquierda, menú a la derecha)
+cabecera: centrada
+
+
+#  ---------- Inicio (home) ----------
+# Texto de bienvenida arriba del listado de portadas (opcional)
+inicio_titulo: Bienvenidos
+inicio_texto: Tocá una portada para abrirla y pasá las hojas como en un libro.
+# Texto del botón de cada portada
+inicio_boton: Abrir
+
+
+#  ---------- Libro (flipbook) ----------
+# paginas: auto (2 en escritorio, 1 en celular) | 1 | 2
+paginas: auto
+# La primera imagen funciona como tapa (va sola, como un libro cerrado): si | no
+tapa: si
+# Tapa y contratapa rígidas (no se curvan al pasar): si | no
+tapa_dura: no
+# Velocidad al pasar la hoja, en milisegundos
+velocidad: 800
+# Desenfoque del fondo, en píxeles
+desenfoque: 40
+# Color de las hojas (se ve si la imagen no cubre toda la página)
+color_hoja: #ffffff
+
+
+#  ---------- Contacto (footer) ----------
+# Completá solo lo que quieras mostrar. Lo vacío no aparece.
+contacto_titulo: Contacto
+contacto_texto: Escribinos y te respondemos a la brevedad.
+email: hola@ejemplo.com
+telefono:
+# WhatsApp: número completo con código de país, sin + ni espacios (ej: 5492954123456)
+whatsapp: 5492954000000
+instagram: ejemplo
+facebook:
+tiktok:
+youtube:
+linkedin:
+web:
+direccion: Santa Rosa, La Pampa, Argentina
+# Texto chico al pie
+pie: © 2026 Rider7. Todos los derechos reservados.
+# Mostrar "Hecho con Rider7" al pie: si | no
+credito: si
+
+
+#  ---------- De dónde salen las imágenes ----------
+# fuente: auto | local | github | drive
+#   auto   = recomendado. Lee las carpetas del servidor y, si no puede, desde GitHub.
+#   local  = solo el listado de carpetas del servidor (prueba en tu compu, hosting con Apache)
+#   github = lee las carpetas del repositorio con la API pública de GitHub
+#   drive  = lee las carpetas desde una carpeta pública de Google Drive
+fuente: auto
+
+# Carpeta donde están las subcarpetas con imágenes
+carpeta_contenido: contenido
+
+# Repositorio de GitHub (usuario/repositorio). Necesario en Cloudflare Pages o con dominio propio.
+# Con una dirección usuario.github.io se detecta solo. El repositorio tiene que ser público.
+github_repositorio:
+# Rama del repositorio (vacío = la rama principal)
+github_rama:
+
+# Solo para fuente drive (ver README)
+drive_carpeta_id:
+drive_api_key:

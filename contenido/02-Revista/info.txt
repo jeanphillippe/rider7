@@ -1,0 +1,3 @@
+# Opcional: datos de esta carpeta
+titulo: Revista N°7
+descripcion: Edición especial con entrevistas, fotos y novedades de la temporada.

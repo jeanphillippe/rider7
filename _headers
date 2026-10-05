@@ -1,0 +1,7 @@
+# Cabeceras para Cloudflare Pages (GitHub Pages ignora este archivo)
+/config.txt
+  Cache-Control: no-cache
+/contenido/*
+  Cache-Control: public, max-age=86400
+/assets/*
+  Cache-Control: public, max-age=86400

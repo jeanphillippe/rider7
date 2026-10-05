@@ -1,0 +1,3 @@
+# Solo para hostings con Apache (cPanel, etc.): permite que el sitio lea el listado de carpetas.
+Options +Indexes
+IndexIgnore .htaccess
