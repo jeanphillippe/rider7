@@ -16,6 +16,7 @@
 </head>
 <body>
   <div class="bg-blur" aria-hidden="true"><img alt=""></div>
+  <div class="vh-probe" aria-hidden="true"></div>
 
   <header class="site-header" id="arriba">
     <div class="header-inner">
@@ -37,36 +38,38 @@
   </header>
 
   <main id="main">
-    <!-- Inicio: listado de portadas -->
+    <!-- Inicio y grupos: listado de portadas -->
     <section class="view view-home" hidden>
       <div class="intro"></div>
       <div class="covers"></div>
     </section>
 
-    <!-- Libro -->
+    <!-- Libro: primero las imágenes, los controles abajo -->
     <section class="view view-book" hidden>
-      <div class="book-bar">
-        <a class="btn-ghost book-back" href="#/" aria-label="Volver al inicio">
-          <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg><span>Inicio</span>
-        </a>
-        <h1 class="book-title"></h1>
-        <div class="book-tools">
-          <button class="btn-ghost tool-zoom" aria-label="Ampliar página" title="Ampliar">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5M11 8v6M8 11h6"/></svg>
-          </button>
-          <button class="btn-ghost tool-full" aria-label="Pantalla completa" title="Pantalla completa">
-            <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-          </button>
-        </div>
-      </div>
       <div class="book-stage">
         <button class="book-arrow prev" aria-label="Página anterior"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
         <div class="book-holder"></div>
         <button class="book-arrow next" aria-label="Página siguiente"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
       </div>
-      <div class="book-foot">
+      <div class="book-ui">
         <input class="book-range" type="range" min="0" max="0" value="0" aria-label="Ir a página">
-        <span class="book-count"></span>
+        <div class="book-bar">
+          <a class="btn-ghost book-back" href="#/" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg><span>Inicio</span>
+          </a>
+          <div class="book-meta">
+            <h1 class="book-title"></h1>
+            <span class="book-count"></span>
+          </div>
+          <div class="book-tools">
+            <button class="btn-ghost tool-zoom" aria-label="Ampliar página" title="Ampliar">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5M11 8v6M8 11h6"/></svg>
+            </button>
+            <button class="btn-ghost tool-full" aria-label="Pantalla completa" title="Pantalla completa">
+              <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 

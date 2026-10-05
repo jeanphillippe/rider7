@@ -2,9 +2,9 @@
 
 Sitio web estático tipo **flipbook**: cada carpeta de imágenes se convierte en un libro que se hojea con efecto de página curva, con su propio elemento en el menú. Se personaliza editando un solo archivo de texto (`config.txt`) y se publica gratis en **GitHub Pages** o **Cloudflare Pages**. Solo hay que pagar el dominio (opcional).
 
-- Logo arriba, menú automático (Inicio + una entrada por carpeta + Contacto).
-- Inicio con las portadas de cada libro, una debajo de la otra.
-- Libro con hojas que se curvan al pasar: dos páginas en escritorio, una en celular.
+- Logo arriba, menú automático (Inicio + una entrada por carpeta + Contacto), con submenús para los grupos.
+- Inicio solo con las portadas, una debajo de la otra. Las imágenes son lo principal.
+- Libro con hojas que se curvan al pasar: dos páginas en escritorio, una en celular. Las imágenes van pegadas al menú y los controles quedan abajo.
 - Fondo del libro: la primera imagen de la carpeta, desenfocada.
 - Modo oscuro / claro, colores y tipografías de Google Fonts configurables.
 - Imágenes desde el propio repositorio o desde una carpeta pública de Google Drive.
@@ -23,9 +23,12 @@ rider7/
 │   │   ├── 01.jpg
 │   │   ├── 02.jpg
 │   │   └── ...
-│   └── 02-Revista/
-│       ├── 01.jpg
-│       └── info.txt    ← opcional
+│   ├── 02-Revista/
+│   │   ├── 01.jpg
+│   │   └── info.txt    ← opcional
+│   └── 04-Eventos/     ← grupo: solo tiene subcarpetas
+│       ├── 01-Fiesta-aniversario/
+│       └── 02-Expo-2026/
 ├── index.html
 └── assets/             ← motor del sitio (no hace falta tocarlo)
 ```
@@ -42,6 +45,13 @@ rider7/
 - Los guiones y guiones bajos se muestran como espacios.
 - Las carpetas que empiezan con `_` o `.` se ignoran (útil para ocultar un libro sin borrarlo).
 
+**Grupos (submenús).** Si una carpeta no tiene imágenes y solo contiene otras carpetas, se convierte en un **grupo**:
+- En el menú aparece con una flechita y despliega sus subcarpetas.
+- Al entrar, muestra las portadas de sus subcarpetas (con el mismo formato que el inicio).
+- En el inicio se ve con hojas apiladas detrás de la tapa, para distinguirlo de un libro.
+- Se pueden anidar hasta 3 niveles (grupo > subgrupo > libro).
+- Si una carpeta tiene imágenes, es un libro: las subcarpetas que tenga adentro se ignoran.
+
 **La primera imagen** de cada carpeta es la tapa y también el fondo desenfocado. La proporción de esa imagen define la forma del libro (vertical, horizontal o cuadrado), así que conviene que todas las páginas tengan el mismo tamaño.
 
 **info.txt (opcional)** dentro de una carpeta, para poner acentos, descripción, etc.:
@@ -56,7 +66,9 @@ portada: 03.jpg
 - `titulo`: nombre que se muestra (si no está, se usa el nombre de la carpeta).
 - `menu`: texto más corto para el menú (opcional).
 - `descripcion`: texto que aparece junto a la portada en el inicio.
-- `portada`: imagen a usar en el inicio si no querés la primera.
+- `portada`: imagen a usar en el inicio si no querés la primera. En un grupo, el nombre de la subcarpeta cuya tapa querés mostrar.
+
+El `info.txt` también funciona dentro de un grupo.
 
 **Tamaño de imágenes recomendado:** entre 1600 y 2000 px del lado más largo, en JPG calidad 80 o WebP. Así cargan rápido en el celular y se ven bien al ampliar.
 
@@ -75,7 +87,8 @@ Abrilo con cualquier editor de texto. Cada línea es `clave: valor` y las línea
 | `color_acento` | Color de botones y menú activo |
 | `fuente_titulos`, `fuente_texto` | Nombre de la tipografía tal como figura en [fonts.google.com](https://fonts.google.com) |
 | `cabecera` | `centrada` (logo arriba, menú abajo) o `lateral` |
-| `inicio_titulo`, `inicio_texto` | Texto de bienvenida del inicio (vacío = no aparece) |
+| `inicio_titulo`, `inicio_texto` | Texto de bienvenida opcional (por defecto vacío: el inicio muestra solo las portadas) |
+| `inicio_boton` | Texto del botón de cada portada (por defecto "Entrar") |
 | `paginas` | `auto`, `1` o `2` páginas a la vez |
 | `tapa`, `tapa_dura` | La primera página va sola como tapa / tapas rígidas |
 | `velocidad`, `desenfoque` | Velocidad de la hoja (ms) y desenfoque del fondo (px) |
@@ -154,7 +167,7 @@ Notas sobre Drive:
 ## 8. Detalles técnicos
 
 - No usa Node ni ningún paso de compilación: los archivos del repositorio son exactamente los que se publican.
-- Navegación con enlaces directos: `tudominio.com/#/catalogo-2026/5` abre ese libro en la página 5.
+- Navegación con enlaces directos: `tudominio.com/#/catalogo-2026/5` abre ese libro en la página 5, y `tudominio.com/#/eventos/expo-2026` abre un libro dentro de un grupo.
 - Teclado: flechas izquierda/derecha para pasar hojas, Esc para cerrar el zoom.
 - Efecto de hojas: [StPageFlip](https://github.com/Nodlik/StPageFlip) (MIT), incluido en `assets/vendor/`.
 
