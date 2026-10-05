@@ -86,13 +86,15 @@ Abrilo con cualquier editor de texto. Cada línea es `clave: valor` y las línea
 | `color_texto_oscuro`, `color_texto_claro` | Color de texto en cada modo |
 | `color_acento` | Color de botones y menú activo |
 | `fuente_titulos`, `fuente_texto` | Nombre de la tipografía tal como figura en [fonts.google.com](https://fonts.google.com) |
-| `cabecera` | `centrada` (logo arriba, menú abajo) o `lateral` |
+| `cabecera` | Siempre en una fila, del alto del logo: `centrada` (menú al centro) o `lateral` (menú a la derecha) |
 | `inicio_titulo`, `inicio_texto` | Texto de bienvenida opcional (por defecto vacío: el inicio muestra solo las portadas) |
 | `inicio_boton` | Texto del botón de cada portada (por defecto "Entrar") |
 | `paginas` | `auto`, `1` o `2` páginas a la vez |
 | `tapa`, `tapa_dura` | La primera página va sola como tapa / tapas rígidas |
 | `velocidad`, `desenfoque` | Velocidad de la hoja (ms) y desenfoque del fondo (px) |
 | `email`, `whatsapp`, `instagram`, ... | Datos de contacto del footer (vacío = no aparece) |
+| `whatsapp_boton` | Botón verde flotante de WhatsApp que aparece a los 2 segundos (`si` / `no`). En celular es chico y, dentro de un libro, se ubica al lado del zoom |
+| `whatsapp_mensaje` | Texto que aparece ya escrito al abrir el chat (opcional) |
 
 ## 4. Cómo encuentra las carpetas (sin compilar nada)
 
@@ -169,6 +171,8 @@ Notas sobre Drive:
 - No usa Node ni ningún paso de compilación: los archivos del repositorio son exactamente los que se publican.
 - Navegación con enlaces directos: `tudominio.com/#/catalogo-2026/5` abre ese libro en la página 5, y `tudominio.com/#/eventos/expo-2026` abre un libro dentro de un grupo.
 - Teclado: flechas izquierda/derecha para pasar hojas, Esc para cerrar el zoom.
+- Las flechas de pasar hoja se atenúan a los 2 segundos para no tapar la imagen y vuelven a verse al mover el mouse o tocar el libro.
+- Las portadas aparecen deslizándose hacia arriba al hacer scroll.
 - Efecto de hojas: [StPageFlip](https://github.com/Nodlik/StPageFlip) (MIT), incluido en `assets/vendor/`.
 
 ## Licencia

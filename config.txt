@@ -36,7 +36,8 @@ color_acento: #e8b04a
 fuente_titulos: Playfair Display
 fuente_texto: Inter
 
-# Cabecera: centrada (logo arriba y menú abajo) | lateral (logo a la izquierda, menú a la derecha)
+# Cabecera (siempre en una fila, del alto del logo):
+#   centrada = logo a la izquierda y menú al centro | lateral = logo a la izquierda y menú a la derecha
 cabecera: centrada
 
 
@@ -71,6 +72,10 @@ email: hola@ejemplo.com
 telefono:
 # WhatsApp: número completo con código de país, sin + ni espacios (ej: 5492954123456)
 whatsapp: 5492954000000
+# Botón verde flotante de WhatsApp (aparece a los 2 segundos): si | no
+whatsapp_boton: si
+# Mensaje que aparece ya escrito al abrir el chat (opcional)
+whatsapp_mensaje: Hola, vi el sitio y quería consultar
 instagram: ejemplo
 facebook:
 tiktok:

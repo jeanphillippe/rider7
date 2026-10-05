@@ -21,6 +21,7 @@
     inicio_titulo: '', inicio_texto: '', inicio_boton: 'Entrar',
     paginas: 'auto', tapa: 'si', tapa_dura: 'no', velocidad: '800', desenfoque: '40', color_hoja: '#ffffff',
     contacto_titulo: 'Contacto', contacto_texto: '',
+    whatsapp_boton: 'si', whatsapp_mensaje: '',
     pie: '', credito: 'si',
     fuente: 'auto', carpeta_contenido: 'contenido',
     github_repositorio: '', github_rama: '',
@@ -500,8 +501,26 @@
       '</div></a>';
   }
 
+  // Las portadas suben suavemente al entrar en pantalla
+  var revealIO = null;
+  function revealCovers() {
+    if (revealIO) revealIO.disconnect();
+    var els = $$('.cover');
+    if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    els.forEach(function (el) { el.classList.add('reveal'); });
+    revealIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add('in');
+        revealIO.unobserve(en.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    els.forEach(function (el) { revealIO.observe(el); });
+  }
+
   function renderCovers(nodes) {
     $('.covers').innerHTML = nodes.map(coverHTML).join('');
+    revealCovers();
     $$('.cover-book img').forEach(function (img) {
       function fit() { if (img.naturalWidth) img.parentNode.style.setProperty('--ratio', img.naturalWidth + '/' + img.naturalHeight); }
       if (img.complete) fit(); else img.addEventListener('load', fit);
@@ -563,6 +582,16 @@
       }).join('') + '</ul>' : '') +
       (legal.length ? '<div class="footer-legal">' + legal.join('') + '</div>' : '') +
       '</div>';
+  }
+
+  /* ---------------- Botón de WhatsApp ---------------- */
+
+  function setupWhatsApp() {
+    var c = state.cfg, n = String(c.whatsapp || '').replace(/\D/g, '');
+    if (!n || !yes(c.whatsapp_boton)) return;
+    var href = 'https://wa.me/' + n + (c.whatsapp_mensaje ? '?text=' + encodeURIComponent(c.whatsapp_mensaje) : '');
+    $$('.wa-float, .wa-inline').forEach(function (a) { a.href = href; a.hidden = false; });
+    setTimeout(function () { document.body.classList.add('wa-ready'); }, 2000);
   }
 
   /* ---------------- Vistas ---------------- */
@@ -707,6 +736,16 @@
 
     $('.book-range').max = n - 1;
     afterFlip();
+    wakeArrows();
+  }
+
+  // Las flechas se muestran y a los 2 segundos bajan su opacidad para no tapar la imagen
+  var arrowTimer = null;
+  function wakeArrows() {
+    var st = $('.book-stage');
+    st.classList.add('arrows-awake');
+    clearTimeout(arrowTimer);
+    arrowTimer = setTimeout(function () { st.classList.remove('arrows-awake'); }, 2000);
   }
 
   // En modo doble, el índice debe ser el comienzo de una doble página
@@ -858,6 +897,11 @@
     });
     matchMedia('(prefers-color-scheme: light)').addEventListener('change', updateLogo);
 
+    var stage = $('.book-stage');
+    stage.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') wakeArrows(); });
+    stage.addEventListener('pointerdown', wakeArrows);
+    stage.addEventListener('touchstart', wakeArrows, { passive: true });
+
     $('.book-arrow.prev').addEventListener('click', function () { if (state.flip) state.flip.flipPrev(); });
     $('.book-arrow.next').addEventListener('click', function () { if (state.flip) state.flip.flipNext(); });
     $('.book-range').addEventListener('input', function () {
@@ -913,6 +957,7 @@
       state.cfg = c;
       applyConfig(c);
       renderFooter();
+      setupWhatsApp();
       return loadTree();
     }).then(function (nodes) {
       state.tree = finishTree(nodes || [], null);
