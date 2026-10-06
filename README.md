@@ -52,7 +52,7 @@ rider7/
 - Se pueden anidar hasta 3 niveles (grupo > subgrupo > libro).
 - Si una carpeta tiene imágenes, es un libro: las subcarpetas que tenga adentro se ignoran.
 
-**La primera imagen** de cada carpeta es la tapa y también el fondo desenfocado. La proporción de esa imagen define la forma del libro (vertical, horizontal o cuadrado), así que conviene que todas las páginas tengan el mismo tamaño.
+**La primera imagen** de cada carpeta es la tapa y también el fondo desenfocado. La proporción de esa imagen define la forma del libro (vertical, horizontal o cuadrado). Si alguna página tiene otra proporción, con `ajuste: llenar` (por defecto) se amplía y se recorta para quedar del mismo tamaño que las demás; con `ajuste: completa` se ve entera, con bordes del color de la hoja. El zoom siempre muestra la imagen original completa.
 
 **info.txt (opcional)** dentro de una carpeta, para poner acentos, descripción, etc.:
 
@@ -67,6 +67,7 @@ portada: 03.jpg
 - `menu`: texto más corto para el menú (opcional).
 - `descripcion`: texto que aparece junto a la portada en el inicio.
 - `portada`: imagen a usar en el inicio si no querés la primera. En un grupo, el nombre de la subcarpeta cuya tapa querés mostrar.
+- `ajuste`: `llenar` o `completa` solo para esa carpeta (si no está, se usa el de `config.txt`).
 
 El `info.txt` también funciona dentro de un grupo.
 
@@ -88,15 +89,21 @@ Abrilo con cualquier editor de texto. Cada línea es `clave: valor` y las línea
 | `titulos_tamano` | Tamaño de los títulos en porcentaje (100 = normal). Útil para fuentes tipo pincel, que se ven chicas |
 | `titulos_peso` | Grosor de los títulos (400 a 700). Si la fuente solo tiene 400, usá 400 para que no se vea dentada |
 | `fuente_titulos`, `fuente_texto` | Nombre de la tipografía tal como figura en [fonts.google.com](https://fonts.google.com) |
-| `cabecera` | Siempre en una fila, del alto del logo: `centrada` (menú al centro) o `lateral` (menú a la derecha) |
+| `cabecera` | Siempre en una fila, del alto del logo: `centrada` (logo al medio y secciones a los costados; en celular ☰ a la izquierda y contacto a la derecha) o `lateral` (logo a la izquierda, menú a la derecha) |
 | `inicio_titulo`, `inicio_texto` | Texto de bienvenida opcional (por defecto vacío: el inicio muestra solo las portadas) |
 | `inicio_boton` | Texto del botón de cada portada (por defecto "Entrar") |
+| `parallax` | Efecto de profundidad en las portadas al hacer scroll: el fondo, el libro y el texto se mueven a distinta velocidad (`si` / `no`) |
+| `parallax_intensidad` | Cuánto se mueve, en porcentaje: `100` suave, `200` el doble, `300` muy marcado (máximo `500`) |
 | `paginas` | `auto`, `1` o `2` páginas a la vez |
 | `tapa`, `tapa_dura` | La primera página va sola como tapa / tapas rígidas |
+| `ajuste` | Imágenes con distinta proporción en una carpeta: `llenar` (amplía y recorta para que todas queden iguales) o `completa` (se ven enteras, con bordes) |
 | `velocidad`, `desenfoque` | Velocidad de la hoja (ms) y desenfoque del fondo (px) |
 | `email`, `whatsapp`, `instagram`, ... | Datos de contacto del footer (vacío = no aparece) |
 | `whatsapp_boton` | Botón verde flotante de WhatsApp que aparece a los 2 segundos (`si` / `no`). En celular es chico y, dentro de un libro, se ubica al lado del zoom |
-| `whatsapp_mensaje` | Texto que aparece ya escrito al abrir el chat (opcional) |
+| `whatsapp_mensaje` | Texto que aparece ya escrito al abrir el chat desde el inicio |
+| `whatsapp_mensaje_libro` | Texto cuando la persona está viendo un libro o grupo. `{titulo}` se reemplaza por su nombre; también acepta `{enlace}` y `{sitio}` |
+| `pie` | Texto chico al pie. Acepta HTML en una línea (una imagen de otro sitio, un enlace) |
+| `idioma`, `seo_tipo`, `seo_imagen` | Datos para Google: idioma, tipo de negocio (schema.org) e imagen para compartir |
 
 ## 4. Cómo encuentra las carpetas (sin compilar nada)
 
@@ -168,13 +175,35 @@ Notas sobre Drive:
 - La API key queda visible en el código del sitio; por eso conviene restringirla a tu dominio y a Drive API. Solo permite leer archivos que ya son públicos.
 - Drive puede tardar un poco más que el repositorio en servir imágenes la primera vez.
 
-## 8. Detalles técnicos
+## 8. SEO (Google y redes)
+
+Lo que el sitio ya hace solo:
+- **Una dirección real por libro y grupo**: `tudominio.com/?ver=catalogo-2026`, `tudominio.com/?ver=eventos/expo-2026&pagina=3`. Google indexa cada una por separado (las direcciones con `#` no se indexan). Los enlaces viejos con `#/` se convierten solos.
+- **Título, descripción y enlace canónico** distintos en cada vista, armados con `config.txt` y los `info.txt`.
+- **Vista previa para redes** (Open Graph y Twitter) con la portada de lo que se está viendo.
+- **Datos estructurados** (schema.org) que Google usa para entender el sitio: el negocio con sus redes y contacto, la galería de cada libro con sus imágenes, las migas de pan (Inicio > Grupo > Libro) y el listado de portadas.
+- **Textos alternativos** en todas las imágenes, un título principal por página, carga diferida de imágenes y prioridad para la primera portada.
+
+Lo que conviene hacer una vez:
+1. **Completá `descripcion`** en `config.txt` (120 a 160 caracteres: qué hacés y dónde) y una `descripcion` en el `info.txt` de cada carpeta importante.
+2. **Elegí `seo_tipo`** según tu rubro (por ejemplo `TattooParlor`, `Store`, `Restaurant`, `LocalBusiness`).
+3. **Editá el bloque SEO de `index.html`** (título, descripción e imagen). WhatsApp, Facebook e Instagram no ejecutan JavaScript: para la vista previa al compartir el enlace leen solo esas líneas.
+4. **Generá el sitemap**: abrí `tudominio.com/?sitemap`, tocá "Descargar sitemap.xml" y subilo al lado de `index.html`. Incluye todas las imágenes, así también aparecen en Google Imágenes. Volvé a generarlo cuando agregues carpetas.
+5. **Completá `robots.txt`** con la dirección del sitemap (instrucciones adentro del archivo).
+6. **Registrá el sitio en [Google Search Console](https://search.google.com/search-console)** y enviá el sitemap desde ahí.
+
+Notas:
+- Nombrá las imágenes y carpetas con palabras descriptivas (`01-tatuajes-realismo` en lugar de `01-carpeta1`): el nombre de la carpeta se usa en la dirección y en el título.
+- Con GitHub Pages o Cloudflare Pages, el listado de carpetas sale de la API pública de GitHub, que tiene un límite de consultas por hora. Google suele respetarlo bien, pero si ves en Search Console páginas sin contenido, la opción más firme es un hosting con Apache, donde el listado lo da el propio servidor.
+- `robots.txt` y `sitemap.xml` solo funcionan en la raíz del dominio: con dominio propio no hay problema; en `usuario.github.io/repositorio` Google los ignora, pero el sitemap se puede enviar igual desde Search Console.
+
+## 9. Detalles técnicos
 
 - No usa Node ni ningún paso de compilación: los archivos del repositorio son exactamente los que se publican.
-- Navegación con enlaces directos: `tudominio.com/#/catalogo-2026/5` abre ese libro en la página 5, y `tudominio.com/#/eventos/expo-2026` abre un libro dentro de un grupo.
+- Navegación con enlaces directos: `tudominio.com/?ver=catalogo-2026&pagina=5` abre ese libro en la página 5, y `tudominio.com/?ver=eventos/expo-2026` abre un libro dentro de un grupo.
 - Teclado: flechas izquierda/derecha para pasar hojas, Esc para cerrar el zoom.
 - Las flechas de pasar hoja se atenúan a los 2 segundos para no tapar la imagen y vuelven a verse al mover el mouse o tocar el libro.
-- Las portadas aparecen deslizándose hacia arriba al hacer scroll.
+- Las portadas aparecen deslizándose hacia arriba al hacer scroll, con parallax en tres capas (se desactiva solo si el dispositivo pide reducir el movimiento).
 - Efecto de hojas: [StPageFlip](https://github.com/Nodlik/StPageFlip) (MIT), incluido en `assets/vendor/`.
 
 ## Licencia

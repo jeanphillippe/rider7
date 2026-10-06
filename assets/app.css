@@ -15,6 +15,7 @@
   --font-title: Georgia, "Times New Roman", serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --logo-h: 48px;
+  --par-k: 1;
   --title-scale: 1;
   --title-weight: 600;
   --header-h: 72px;
@@ -58,6 +59,11 @@ h1, h2, h3 {
 }
 svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 [hidden] { display: none !important; }
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.noscript { text-align: center; padding: 40px 20px; color: var(--muted); }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
 
 /* ---------- Fondo desenfocado (libro) ---------- */
@@ -99,6 +105,19 @@ body.is-book .bg-blur.ready { opacity: 1; }
 .brand.has-logo .brand-text { display: none; }
 
 .site-nav { margin-left: auto; }
+.hdr-left, .hdr-right { display: flex; align-items: center; gap: 4px; }
+.nav-list.nav-split { display: none; }
+.head-contact {
+  display: none; width: 40px; height: 40px; border-radius: 50%; place-items: center; flex-shrink: 0;
+  color: var(--muted); transition: color .2s, background-color .2s;
+}
+.head-contact:hover { color: var(--fg); background: var(--line); }
+
+/* Cabecera lateral: logo a la izquierda, menú a la derecha */
+body:not(.header-centered) .brand { order: 0; }
+body:not(.header-centered) .site-nav { order: 1; }
+body:not(.header-centered) .hdr-left { order: 2; }
+body:not(.header-centered) .hdr-right { order: 3; }
 .nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: nowrap; gap: 4px; }
 .nav-list a {
   display: block; padding: 8px 14px; border-radius: 999px;
@@ -128,14 +147,28 @@ body.is-book .bg-blur.ready { opacity: 1; }
 .menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
 .menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* Cabecera centrada: logo a la izquierda, menú al centro, todo en una fila */
-.header-centered .header-inner { display: grid; grid-template-columns: 1fr auto 1fr; }
-.header-centered .brand { justify-self: start; }
-.header-centered .site-nav { margin: 0; justify-self: center; }
-.header-centered .theme-toggle { grid-column: 3; justify-self: end; }
+/* Cabecera centrada: logo al medio y las secciones repartidas a los costados */
+.header-centered .header-inner { display: grid; grid-template-columns: 1fr auto 1fr; column-gap: 12px; }
+.header-centered .hdr-left { grid-column: 1; grid-row: 1; justify-content: flex-end; }
+.header-centered .brand { grid-column: 2; grid-row: 1; justify-self: center; }
+.header-centered .hdr-right { grid-column: 3; grid-row: 1; justify-content: flex-start; }
+.header-centered .nav-list.nav-split { display: flex; }
+.header-centered .site-nav { display: none; }
+.header-centered .theme-toggle { margin-left: auto; }
+.header-centered .menu-toggle { margin-left: 0; }
+/* En celular (o si no entra): ☰ a la izquierda, logo al medio, contacto y modo a la derecha */
+body.header-centered.nav-compact .nav-list.nav-split { display: none; }
+body.header-centered.nav-compact .site-nav { display: block; }
+body.header-centered.nav-compact .header-inner { grid-template-columns: 88px minmax(0, 1fr) 88px; }
+body.header-centered.nav-compact .brand { min-width: 0; max-width: 100%; }
+body.header-centered.nav-compact .brand-logo { max-width: 100%; }
+body.header-centered.nav-compact .hdr-left { justify-content: flex-start; }
+body.header-centered.nav-compact .hdr-right { justify-content: flex-end; }
+body.header-centered.nav-compact .head-contact { display: grid; }
+body.header-centered.nav-compact .theme-toggle { margin-left: 0; }
 
 /* Menú compacto (celular o muchos elementos) */
-body.nav-compact .header-inner { display: flex; flex-direction: row; }
+body.nav-compact:not(.header-centered) .header-inner { display: flex; flex-direction: row; }
 .nav-compact .menu-toggle { display: flex; }
 .nav-compact .theme-toggle { order: 3; }
 .nav-compact .menu-toggle { order: 2; }
@@ -307,6 +340,18 @@ main { min-height: calc(100vh - var(--header-h)); }
 .cover-btn svg { width: 18px; height: 18px; stroke-width: 2.2; }
 .cover:hover .cover-btn { gap: 16px; }
 
+/* Parallax: cada capa se desplaza distinto según --p (lo calcula app.js al hacer scroll).
+   Usa la propiedad translate para no pisar los giros y escalas de arriba. */
+.parallax .cover { --p: 0; --par-bg: 9%; --par-art: 56px; --par-info: 22px; }
+/* --par-k = parallax_intensidad / 100. Con más intensidad el fondo se amplía un poco para que no se vean sus bordes */
+.parallax .cover-bg {
+  translate: 0 calc(var(--p) * var(--par-bg) * var(--par-k) * -1);
+  scale: max(1, calc(1 + (var(--par-k) - 1) * .14));
+  will-change: translate;
+}
+.parallax .cover-art { translate: 0 calc(var(--p) * var(--par-art) * var(--par-k)); will-change: translate; }
+.parallax .cover-info { translate: 0 calc(var(--p) * var(--par-info) * var(--par-k)); }
+
 /* ---------- Libro ---------- */
 body.is-book .site-header { background: color-mix(in srgb, var(--bg) 35%, transparent); }
 body.is-book main { min-height: auto; }
@@ -357,6 +402,8 @@ body.is-book main { min-height: auto; }
   user-select: none; -webkit-user-drag: none; pointer-events: none;
 }
 .page img.loaded { opacity: 1; }
+/* ajuste: llenar -> todas las páginas del mismo tamaño, recortando lo que sobra */
+.book-holder.fill .page img { object-fit: cover; object-position: center; }
 .page .page-loader {
   position: absolute; width: 28px; height: 28px;
   border: 3px solid rgba(0,0,0,.1); border-top-color: var(--accent);
@@ -489,6 +536,15 @@ body.is-book .site-footer { background: color-mix(in srgb, var(--bg) 82%, transp
 .contact-list svg { width: 19px; height: 19px; flex-shrink: 0; }
 .footer-legal { font-size: .82rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center; border-top: 1px solid var(--line); padding-top: 22px; }
 .footer-legal a { color: var(--muted); }
+.footer-legal .pie { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.footer-legal img { display: inline-block; max-height: 40px; width: auto; vertical-align: middle; }
+.site-footer address { font-style: normal; }
+.sitemap-box {
+  width: 100%; min-height: 260px; margin-top: 18px; padding: 14px;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 12px; resize: vertical;
+}
+.msg .cover-btn { text-decoration: none; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 760px) {
@@ -500,6 +556,7 @@ body.is-book .site-footer { background: color-mix(in srgb, var(--bg) 82%, transp
   .cover:nth-child(even) .cover-art { order: 0; }
   .cover-book, .cover:nth-child(even) .cover-book { max-width: 62vw; transform: rotateY(-8deg); transform-origin: left center; }
   .cover-info p { margin-left: auto; margin-right: auto; }
+  .parallax .cover { --par-art: 26px; --par-info: 12px; }
   .view-book { padding: 4px 6px 8px; }
   .book-back span { display: none; }
   .book-ui { opacity: 1; }

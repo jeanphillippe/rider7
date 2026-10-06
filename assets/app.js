@@ -20,8 +20,11 @@
     cabecera: 'centrada',
     inicio_titulo: '', inicio_texto: '', inicio_boton: 'Entrar',
     paginas: 'auto', tapa: 'si', tapa_dura: 'no', velocidad: '800', desenfoque: '40', color_hoja: '#ffffff',
+    ajuste: 'llenar', parallax: 'si', parallax_intensidad: '100',
     contacto_titulo: 'Contacto', contacto_texto: '',
-    whatsapp_boton: 'si', whatsapp_mensaje: '',
+    whatsapp_boton: 'si', whatsapp_mensaje: 'Hola! Quería consultar',
+    whatsapp_mensaje_libro: 'Hola! Quería consultar sobre {titulo} que vi en la web',
+    idioma: 'es', seo_tipo: 'Organization', seo_imagen: '',
     pie: '', credito: 'si',
     fuente: 'auto', carpeta_contenido: 'contenido',
     github_repositorio: '', github_rama: '',
@@ -48,6 +51,8 @@
   }
   function yes(v) { return /^(s[ií]|yes|true|1|on)$/i.test(String(v || '').trim()); }
   function num(v, d) { var n = parseFloat(v); return isFinite(n) ? n : d; }
+  // ajuste: llenar (recorta para que todas las páginas queden iguales) | completa (muestra la imagen entera)
+  function isFill(v) { return /^(llenar|rellenar|fill|cover|recortar)$/i.test(String(v || '').trim()); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -64,6 +69,16 @@
   }
   function hidden(name) { return /^[._]/.test(name); }
   function encPath(p) { return p.split('/').map(encodeURIComponent).join('/'); }
+
+  /* Direcciones de cada vista: ./?ver=grupo/libro&pagina=3
+     Son direcciones reales (no #), así Google indexa cada libro y grupo por separado
+     y funcionan en cualquier hosting estático sin configuración extra. */
+  function urlFor(path, page) {
+    if (!path) return './';
+    return './?ver=' + path.split('/').map(encodeURIComponent).join('/') + (page > 1 ? '&pagina=' + page : '');
+  }
+  function absUrl(rel) { try { return new URL(rel, location.href).href; } catch (e) { return rel; } }
+  function samePage(a, b) { return a.replace(/index\.html?$/i, '') === b.replace(/index\.html?$/i, ''); }
   function store(k, v) {
     try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; }
   }
@@ -77,6 +92,14 @@
       if (!r.ok) throw new Error(r.status + ' ' + url);
       return r.text();
     });
+  }
+  /* Sube al inicio de la página al instante. El scroll suave del CSS se cortaba a mitad de camino
+     cuando el libro cambia el alto de la página mientras se arma, y había que subir a mano. */
+  function toTop() {
+    var h = document.documentElement;
+    h.style.scrollBehavior = 'auto';
+    window.scrollTo(0, 0);
+    h.style.scrollBehavior = '';
   }
   function debounce(fn, ms) { var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
   function loadImage(src) {
@@ -145,6 +168,7 @@
     root.setProperty('--page', c.color_hoja);
     root.setProperty('--blur', num(c.desenfoque, 40) + 'px');
     root.setProperty('--logo-h', num(c.logo_alto, 48) + 'px');
+    root.setProperty('--par-k', String(parallaxK()));
     root.setProperty('--font-title', '"' + c.fuente_titulos + '", Georgia, serif');
     root.setProperty('--title-scale', String(Math.min(4, Math.max(0.3, num(c.titulos_tamano, 100) / 100))));
     root.setProperty('--title-weight', String(Math.round(Math.min(900, Math.max(100, num(c.titulos_peso, 600))))));
@@ -160,17 +184,23 @@
 
     document.body.classList.toggle('header-centered', !/^lateral/i.test(c.cabecera));
 
-    document.title = c.titulo;
-    var md = $('meta[name="description"]');
-    if (md) md.setAttribute('content', c.descripcion);
-    var fav = document.createElement('link');
+    document.documentElement.lang = c.idioma || 'es';
+    $('.site-h1').textContent = c.titulo;
+    var fav = $('link[rel="icon"]') || document.head.appendChild(document.createElement('link'));
     fav.rel = 'icon';
     fav.href = c.favicon || c.logo;
-    document.head.appendChild(fav);
+    var touch = $('link[rel="apple-touch-icon"]');
+    if (touch) touch.href = c.favicon || c.logo;
+    updateThemeColor();
 
     $('.brand-text').textContent = c.titulo;
     $('.brand').setAttribute('aria-label', c.titulo + ' · inicio');
     updateLogo();
+  }
+
+  function updateThemeColor() {
+    var c = state.cfg;
+    setMeta('name', 'theme-color', effectiveTheme() === 'light' ? c.color_fondo_claro : c.color_fondo_oscuro);
   }
 
   function effectiveTheme() {
@@ -212,6 +242,7 @@
       }
       base.type = 'book';
       base.imagenes = images.slice();
+      if (info.ajuste) base.ajuste = info.ajuste;
       base.portada = (extra && extra.portada) || portada;
       base.fondo = images[0];
       return base;
@@ -429,10 +460,104 @@
     return fromListing().catch(function () { return fromGitHub(); });
   }
 
+  /* ---------------- SEO: metadatos y datos estructurados ---------------- */
+
+  function setMeta(attr, key, val) {
+    var el = document.head.querySelector('meta[' + attr + '="' + key + '"]');
+    if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+    el.setAttribute('content', val || '');
+  }
+  function setCanonical(href) {
+    var l = $('link[rel="canonical"]');
+    if (!l) { l = document.createElement('link'); l.rel = 'canonical'; document.head.appendChild(l); }
+    l.href = href;
+  }
+  function plain(html) { var d = document.createElement('div'); d.innerHTML = html || ''; return (d.textContent || '').trim(); }
+  function clip(t, n) { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : t; }
+  function seoImage() {
+    var c = state.cfg;
+    return absUrl(c.seo_imagen || (state.tree[0] && state.tree[0].portada) || c.logo);
+  }
+
+  // Actualiza título, descripción, enlace canónico y vista previa para redes en cada vista
+  function updateSEO(o) {
+    var c = state.cfg;
+    var title = o.title ? o.title + ' · ' + c.titulo : c.titulo;
+    var desc = clip(o.desc || c.descripcion || c.titulo, 158);
+    var url = absUrl(urlFor(o.path || ''));
+    var img = o.image ? absUrl(o.image) : seoImage();
+    document.title = title;
+    setMeta('name', 'description', desc);
+    setMeta('name', 'robots', o.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large');
+    setMeta('property', 'og:site_name', c.titulo);
+    setMeta('property', 'og:title', title);
+    setMeta('property', 'og:description', desc);
+    setMeta('property', 'og:url', url);
+    setMeta('property', 'og:image', img);
+    setMeta('property', 'og:type', o.path ? 'article' : 'website');
+    setMeta('name', 'twitter:title', title);
+    setMeta('name', 'twitter:description', desc);
+    setMeta('name', 'twitter:image', img);
+    setCanonical(url);
+    setJsonLd(o, url, desc);
+  }
+
+  function setJsonLd(o, url, desc) {
+    var c = state.cfg, site = absUrl('./');
+    var org = { '@type': c.seo_tipo || 'Organization', '@id': site + '#org', name: c.titulo, url: site };
+    if (c.logo) org.logo = absUrl(c.logo);
+    org.image = seoImage();
+    if (c.descripcion) org.description = c.descripcion;
+    if (c.telefono) org.telephone = c.telefono;
+    else if (c.whatsapp) org.telephone = '+' + String(c.whatsapp).replace(/\D/g, '');
+    if (c.email) org.email = c.email;
+    if (c.direccion) org.address = c.direccion;
+    var same = socialLinks().filter(function (s) { return s.social; }).map(function (s) { return s.h; });
+    if (same.length) org.sameAs = same;
+    var graph = [
+      { '@type': 'WebSite', '@id': site + '#web', url: site, name: c.titulo, inLanguage: c.idioma || 'es', publisher: { '@id': site + '#org' } },
+      org
+    ];
+    var node = o.node;
+    if (node) {
+      // Migas de pan: Inicio > Grupo > Libro
+      var crumbs = [], n = node;
+      while (n) { crumbs.unshift(n); n = n.parent; }
+      graph.push({
+        '@type': 'BreadcrumbList',
+        itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Inicio', item: site }].concat(crumbs.map(function (x, i) {
+          return { '@type': 'ListItem', position: i + 2, name: x.titulo, item: absUrl(urlFor(x.path)) };
+        }))
+      });
+      if (node.type === 'book') {
+        graph.push({
+          '@type': 'ImageGallery', '@id': url + '#galeria', url: url, name: node.titulo, description: desc,
+          inLanguage: c.idioma || 'es', isPartOf: { '@id': site + '#web' }, about: { '@id': site + '#org' },
+          primaryImageOfPage: absUrl(node.portada),
+          image: node.imagenes.slice(0, 30).map(function (u, i) {
+            return { '@type': 'ImageObject', contentUrl: absUrl(u), name: node.titulo + ' · ' + (i + 1) };
+          })
+        });
+      }
+    }
+    var list = node ? (node.type === 'group' ? node.children : null) : state.tree;
+    if (list && list.length) {
+      graph.push({
+        '@type': 'ItemList', name: node ? node.titulo : c.titulo,
+        itemListElement: list.map(function (x, i) {
+          return { '@type': 'ListItem', position: i + 1, name: x.titulo, url: absUrl(urlFor(x.path)), image: absUrl(x.portada) };
+        })
+      });
+    }
+    var s = document.getElementById('r7-ld');
+    if (!s) { s = document.createElement('script'); s.type = 'application/ld+json'; s.id = 'r7-ld'; document.head.appendChild(s); }
+    s.textContent = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+  }
+
   /* ---------------- Cabecera y menú ---------------- */
 
   function navItem(n) {
-    var link = '<a href="#/' + esc(n.path) + '" data-key="' + esc(n.path) + '">' + esc(n.menu) + '</a>';
+    var link = '<a href="' + esc(urlFor(n.path)) + '" data-key="' + esc(n.path) + '">' + esc(n.menu) + '</a>';
     if (n.type !== 'group') return '<li>' + link + '</li>';
     return '<li class="has-sub"><div class="nav-group">' + link +
       '<button class="sub-toggle" aria-expanded="false" aria-label="Ver ' + esc(n.menu) + '">' + icon('caret') + '</button></div>' +
@@ -440,10 +565,14 @@
   }
 
   function buildNav() {
-    $('.nav-list').innerHTML =
-      '<li><a href="#/" data-key="">Inicio</a></li>' +
-      state.tree.map(navItem).join('') +
-      '<li><a href="#contacto" data-key="#contacto">' + esc(state.cfg.contacto_titulo || 'Contacto') + '</a></li>';
+    var items = ['<li><a href="./" data-key="">Inicio</a></li>']
+      .concat(state.tree.map(navItem))
+      .concat(['<li><a href="#contacto" data-key="#contacto">' + esc(state.cfg.contacto_titulo || 'Contacto') + '</a></li>']);
+    $('.nav-main').innerHTML = items.join('');
+    // Cabecera centrada: la mitad de las secciones a cada lado del logo
+    var half = Math.ceil(items.length / 2);
+    $('.nav-split-left').innerHTML = items.slice(0, half).join('');
+    $('.nav-split-right').innerHTML = items.slice(half).join('');
     checkNav();
   }
 
@@ -492,9 +621,10 @@
   function coverHTML(n, i) {
     var c = state.cfg, group = n.type === 'group';
     var count = group ? countBooks(n) : 0;
-    return '<a class="cover' + (group ? ' cover-group' : '') + '" href="#/' + esc(n.path) + '">' +
-      '<img class="cover-bg" src="' + n.portada + '" alt="" loading="lazy">' +
-      '<div class="cover-art"><div class="cover-book"><img src="' + n.portada + '" alt="' + esc(n.titulo) + '" loading="' + (i < 2 ? 'eager' : 'lazy') + '"></div></div>' +
+    return '<a class="cover' + (group ? ' cover-group' : '') + '" href="' + esc(urlFor(n.path)) + '">' +
+      '<img class="cover-bg" src="' + n.portada + '" alt="" loading="lazy" decoding="async">' +
+      '<div class="cover-art"><div class="cover-book"><img src="' + n.portada + '" alt="' + esc(n.titulo) + (n.descripcion ? ': ' + esc(n.descripcion) : '') + '"' +
+        (i === 0 ? ' fetchpriority="high"' : ' loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async"') + '></div></div>' +
       '<div class="cover-info">' +
         (group ? '<div class="cover-kicker" title="' + count + ' dentro">' + icon('stack') + '<span>' + count + '</span></div>' : '') +
         '<h2>' + esc(n.titulo) + '</h2>' +
@@ -520,9 +650,39 @@
     els.forEach(function (el) { revealIO.observe(el); });
   }
 
+  /* Parallax del inicio: fondo, libro y texto se mueven a distinta velocidad al hacer scroll.
+     Cada portada recibe --p (de 1 = entrando por abajo, a -1 = saliendo por arriba) y el CSS hace el resto. */
+  var parallaxEls = [], parallaxTick = false;
+  function parallax() {
+    parallaxTick = false;
+    if (!document.body.classList.contains('parallax') || $('.view-home').hidden) return;
+    var vh = window.innerHeight;
+    parallaxEls.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.bottom < -50 || r.top > vh + 50) return;
+      var p = (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2);
+      el.style.setProperty('--p', Math.max(-1, Math.min(1, p)).toFixed(4));
+    });
+  }
+  function requestParallax() {
+    if (parallaxTick) return;
+    parallaxTick = true;
+    requestAnimationFrame(parallax);
+  }
+  // parallax_intensidad en porcentaje: 100 = normal, 200 = el doble, 0 = sin efecto
+  function parallaxK() { return Math.min(5, Math.max(0, num(state.cfg.parallax_intensidad, 100) / 100)); }
+  function setupParallax() {
+    if (!yes(state.cfg.parallax) || !parallaxK() || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    document.body.classList.add('parallax');
+    window.addEventListener('scroll', requestParallax, { passive: true });
+    window.addEventListener('resize', requestParallax);
+  }
+
   function renderCovers(nodes) {
     $('.covers').innerHTML = nodes.map(coverHTML).join('');
     revealCovers();
+    parallaxEls = $$('.cover').slice(1); // la primera queda fija: márgenes parejos con la cabecera
+    requestParallax();
     $$('.cover-book img').forEach(function (img) {
       function fit() { if (img.naturalWidth) img.parentNode.style.setProperty('--ratio', img.naturalWidth + '/' + img.naturalHeight); }
       if (img.complete) fit(); else img.addEventListener('load', fit);
@@ -531,10 +691,10 @@
 
   function backTarget(n) {
     var p = n && n.parent;
-    return p ? { href: '#/' + p.path, label: p.titulo } : { href: '#/', label: 'Inicio' };
+    return p ? { href: urlFor(p.path), label: p.titulo } : { href: './', label: 'Inicio' };
   }
 
-  function showList(group, scrollToContact) {
+  function showList(group, scrollToContact, noindex) {
     destroyFlip();
     state.col = null;
     var c = state.cfg, head = '';
@@ -548,40 +708,52 @@
     }
     $('.intro').innerHTML = head;
     $('.intro').classList.toggle('is-group', !!group);
+    $('.site-h1').hidden = !!group || !!c.inicio_titulo;
     renderCovers(group ? group.children : state.tree);
     show('home');
     setActive(scrollToContact ? '#contacto' : (group ? group.path : ''));
-    document.title = group ? group.titulo + ' · ' + c.titulo : c.titulo;
+    updateSEO(group ? {
+      title: group.titulo, path: group.path, node: group, image: group.portada,
+      desc: group.descripcion || (group.titulo + ': ' + group.children.map(function (x) { return x.titulo; }).join(', ') + '. ' + (c.descripcion || ''))
+    } : { noindex: !!noindex });
+    updateWhatsApp(group ? group.titulo : '', group ? group.path : '');
     if (scrollToContact) setTimeout(function () { $('#contacto').scrollIntoView({ behavior: 'smooth' }); }, 50);
-    else window.scrollTo(0, 0);
+    else toTop();
   }
 
   /* ---------------- Footer ---------------- */
 
-  function renderFooter() {
+  // Datos de contacto y redes (se usan en el pie y en los datos para Google)
+  function socialLinks() {
     var c = state.cfg, items = [];
     function url(v, base) { return /^https?:\/\//i.test(v) ? v : base + v.replace(/^@/, ''); }
     if (c.email) items.push({ i: 'mail', h: 'mailto:' + c.email, t: c.email });
     if (c.telefono) items.push({ i: 'phone', h: 'tel:' + c.telefono.replace(/[^\d+]/g, ''), t: c.telefono });
-    if (c.whatsapp) items.push({ i: 'whatsapp', h: 'https://wa.me/' + c.whatsapp.replace(/\D/g, ''), t: 'WhatsApp', x: 1 });
-    if (c.instagram) items.push({ i: 'instagram', h: url(c.instagram, 'https://instagram.com/'), t: /^https?:/.test(c.instagram) ? 'Instagram' : '@' + c.instagram.replace(/^@/, ''), x: 1 });
-    if (c.facebook) items.push({ i: 'facebook', h: url(c.facebook, 'https://facebook.com/'), t: 'Facebook', x: 1 });
-    if (c.tiktok) items.push({ i: 'tiktok', h: url(c.tiktok, 'https://www.tiktok.com/@'), t: 'TikTok', x: 1 });
-    if (c.youtube) items.push({ i: 'youtube', h: url(c.youtube, 'https://youtube.com/@'), t: 'YouTube', x: 1 });
-    if (c.linkedin) items.push({ i: 'linkedin', h: url(c.linkedin, 'https://linkedin.com/in/'), t: 'LinkedIn', x: 1 });
-    if (c.web) items.push({ i: 'web', h: url(c.web, 'https://'), t: c.web.replace(/^https?:\/\//, '').replace(/\/$/, ''), x: 1 });
+    if (c.whatsapp) items.push({ i: 'whatsapp', h: 'https://wa.me/' + c.whatsapp.replace(/\D/g, ''), t: 'WhatsApp', x: 1, cls: 'wa-link' });
+    if (c.instagram) items.push({ i: 'instagram', h: url(c.instagram, 'https://instagram.com/'), t: /^https?:/.test(c.instagram) ? 'Instagram' : '@' + c.instagram.replace(/^@/, ''), x: 1, social: 1 });
+    if (c.facebook) items.push({ i: 'facebook', h: url(c.facebook, 'https://facebook.com/'), t: 'Facebook', x: 1, social: 1 });
+    if (c.tiktok) items.push({ i: 'tiktok', h: url(c.tiktok, 'https://www.tiktok.com/@'), t: 'TikTok', x: 1, social: 1 });
+    if (c.youtube) items.push({ i: 'youtube', h: url(c.youtube, 'https://youtube.com/@'), t: 'YouTube', x: 1, social: 1 });
+    if (c.linkedin) items.push({ i: 'linkedin', h: url(c.linkedin, 'https://linkedin.com/in/'), t: 'LinkedIn', x: 1, social: 1 });
+    if (c.web) items.push({ i: 'web', h: url(c.web, 'https://'), t: c.web.replace(/^https?:\/\//, '').replace(/\/$/, ''), x: 1, social: 1 });
     if (c.direccion) items.push({ i: 'pin', h: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(c.direccion), t: c.direccion, x: 1 });
+    return items;
+  }
+
+  function renderFooter() {
+    var c = state.cfg, items = socialLinks();
 
     var legal = [];
-    if (c.pie) legal.push('<span>' + esc(c.pie) + '</span>');
+    // El pie acepta HTML (por ejemplo una imagen alojada en otro sitio o un enlace)
+    if (c.pie) legal.push('<span class="pie">' + c.pie + '</span>');
     if (yes(c.credito)) legal.push('<span>Hecho con Rider7</span>');
 
     $('.site-footer').innerHTML = '<div class="footer-inner">' +
       '<h2>' + esc(c.contacto_titulo) + '</h2>' +
       (c.contacto_texto ? '<p class="footer-text">' + esc(c.contacto_texto) + '</p>' : '') +
-      (items.length ? '<ul class="contact-list">' + items.map(function (it) {
-        return '<li><a href="' + esc(it.h) + '"' + (it.x ? ' target="_blank" rel="noopener"' : '') + '>' + icon(it.i) + '<span>' + esc(it.t) + '</span></a></li>';
-      }).join('') + '</ul>' : '') +
+      (items.length ? '<address><ul class="contact-list">' + items.map(function (it) {
+        return '<li><a ' + (it.cls ? 'class="' + it.cls + '" ' : '') + 'href="' + esc(it.h) + '"' + (it.x ? ' target="_blank" rel="noopener"' : '') + '>' + icon(it.i) + '<span>' + esc(it.t) + '</span></a></li>';
+      }).join('') + '</ul></address>' : '') +
       (legal.length ? '<div class="footer-legal">' + legal.join('') + '</div>' : '') +
       '</div>';
   }
@@ -591,9 +763,22 @@
   function setupWhatsApp() {
     var c = state.cfg, n = String(c.whatsapp || '').replace(/\D/g, '');
     if (!n || !yes(c.whatsapp_boton)) return;
-    var href = 'https://wa.me/' + n + (c.whatsapp_mensaje ? '?text=' + encodeURIComponent(c.whatsapp_mensaje) : '');
-    $$('.wa-float, .wa-inline').forEach(function (a) { a.href = href; a.hidden = false; });
+    $$('.wa-float, .wa-inline').forEach(function (a) { a.hidden = false; });
+    updateWhatsApp('', '');
     setTimeout(function () { document.body.classList.add('wa-ready'); }, 2000);
+  }
+
+  // El mensaje cambia según lo que se está mirando: {titulo} y {enlace} se reemplazan solos
+  function updateWhatsApp(titulo, path) {
+    var c = state.cfg, n = String(c.whatsapp || '').replace(/\D/g, '');
+    if (!n) return;
+    var tpl = titulo ? (c.whatsapp_mensaje_libro || c.whatsapp_mensaje) : c.whatsapp_mensaje;
+    var msg = String(tpl || '')
+      .replace(/\{titulo\}/gi, titulo || c.titulo)
+      .replace(/\{enlace\}/gi, absUrl(urlFor(path || '')))
+      .replace(/\{sitio\}/gi, c.titulo);
+    var href = 'https://wa.me/' + n + (msg ? '?text=' + encodeURIComponent(msg) : '');
+    $$('.wa-float, .wa-inline, .wa-link').forEach(function (a) { a.href = href; });
   }
 
   /* ---------------- Vistas ---------------- */
@@ -622,6 +807,7 @@
 
   function openBook(col, startPage) {
     if (state.col === col && state.flip) {
+      toTop();
       if (startPage !== state.page) { state.flip.turnToPage(normalizePage(startPage)); state.page = state.flip.getCurrentPageIndex(); afterFlip(); }
       return;
     }
@@ -630,9 +816,13 @@
     show('book');
     setActive(col.path);
     closeMenu();
-    window.scrollTo(0, 0);
-    document.title = col.titulo + ' · ' + state.cfg.titulo;
+    toTop();
     $('.book-title').textContent = col.titulo;
+    updateSEO({
+      title: col.titulo, path: col.path, node: col, image: col.portada,
+      desc: col.descripcion || (col.titulo + (col.parent ? ' (' + col.parent.titulo + ')' : '') + ': ' + col.imagenes.length + ' páginas. ' + (state.cfg.descripcion || ''))
+    });
+    updateWhatsApp(col.titulo, col.path);
     var back = backTarget(col);
     var bl = $('.book-back');
     bl.setAttribute('href', back.href);
@@ -653,6 +843,7 @@
     ready.then(function () {
       if (state.col !== col) return;
       buildFlip(Math.max(0, Math.min(startPage || 0, col.imagenes.length - 1)));
+      toTop();
     });
   }
 
@@ -684,6 +875,7 @@
     destroyFlip();
     var L = state.layout = computeLayout();
     var holder = $('.book-holder');
+    holder.classList.toggle('fill', isFill(col.ajuste || c.ajuste));
     var w = L.two ? L.pw * 2 : L.pw;
     $('.book-stage').style.height = L.ph + 'px';
     holder.style.width = w + 'px';
@@ -788,8 +980,7 @@
     updateShift();
     lazyLoad();
     if (fromUser) {
-      var h = '#/' + state.col.path + (first > 0 ? '/' + (first + 1) : '');
-      try { history.replaceState(null, '', h); } catch (e) {}
+      try { history.replaceState(null, '', urlFor(state.col.path, first + 1)); } catch (e) {}
     }
   }
 
@@ -821,17 +1012,15 @@
   }
 
   /* ---------------- Router ----------------
-     #/                    inicio
-     #/libro/5             libro, página 5
-     #/grupo               portadas del grupo
-     #/grupo/libro/3       libro dentro de un grupo
+     ./                              inicio
+     ./?ver=libro&pagina=5           libro, página 5
+     ./?ver=grupo                    portadas del grupo
+     ./?ver=grupo/libro&pagina=3     libro dentro de un grupo
+     ./?sitemap                      generador de sitemap.xml
+     Los enlaces viejos con #/ siguen funcionando y se convierten solos.
   */
 
-  function route() {
-    closeZoom();
-    var h = decodeURIComponent(location.hash.replace(/^#/, ''));
-    if (h === 'contacto') return showList(null, true);
-    var segs = h.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+  function findNode(segs) {
     var list = state.tree, node = null, i = 0;
     while (i < segs.length && list) {
       var m = list.filter(function (x) { return x.slug === segs[i]; })[0];
@@ -839,17 +1028,79 @@
       node = m; i++;
       list = m.type === 'group' ? m.children : null;
     }
-    if (node && node.type === 'book') {
-      var p = segs[i] ? Math.max(0, (parseInt(segs[i], 10) || 1) - 1) : 0;
-      return openBook(node, p);
+    return { node: node, rest: segs.slice(i) };
+  }
+
+  function route() {
+    closeZoom();
+    var q = new URLSearchParams(location.search);
+    if (q.has('sitemap')) return showSitemap();
+    var legacy = /^#\//.test(location.hash);
+    var raw = legacy ? decodeURIComponent(location.hash.slice(2)) : (q.get('ver') || '');
+    var segs = raw.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+    var f = findNode(segs);
+    var page = parseInt(q.get('pagina'), 10) || parseInt(f.rest[0], 10) || 1;
+    if (legacy) {
+      try { history.replaceState(null, '', f.node ? urlFor(f.node.path, f.node.type === 'book' ? page : 0) : './'); } catch (e) {}
     }
-    showList(node && node.type === 'group' ? node : null);
+    if (f.node && f.node.type === 'book') return openBook(f.node, Math.max(0, page - 1));
+    if (f.node) return showList(f.node);
+    showList(null, location.hash === '#contacto', segs.length > 0);
+  }
+
+  // Generador de sitemap.xml: abrir tusitio.com/?sitemap y descargar el archivo
+  function showSitemap() {
+    destroyFlip();
+    state.col = null;
+    var today = new Date().toISOString().slice(0, 10);
+    function x(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    var rows = ['  <url><loc>' + x(absUrl('./')) + '</loc><lastmod>' + today + '</lastmod><priority>1.0</priority></url>'];
+    (function walk(nodes) {
+      nodes.forEach(function (n) {
+        var imgs = (n.type === 'book' ? n.imagenes : [n.portada]).slice(0, 1000).map(function (u) {
+          return '\n    <image:image><image:loc>' + x(absUrl(u)) + '</image:loc></image:image>';
+        }).join('');
+        rows.push('  <url><loc>' + x(absUrl(urlFor(n.path))) + '</loc><lastmod>' + today + '</lastmod>' + imgs + '\n  </url>');
+        if (n.type === 'group') walk(n.children);
+      });
+    })(state.tree);
+    var xml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' +
+      rows.join('\n') + '\n</urlset>\n';
+    showMessage('Sitemap para Google',
+      '<p>Guardá este archivo como <code>sitemap.xml</code> en la raíz del sitio (al lado de <code>index.html</code>) y avisale a Google desde Search Console. ' +
+      'Volvé a generarlo cuando agregues carpetas nuevas.</p>' +
+      '<p><a class="cover-btn" download="sitemap.xml" href="data:application/xml;charset=utf-8,' + encodeURIComponent(xml) + '">Descargar sitemap.xml</a></p>' +
+      '<textarea class="sitemap-box" readonly spellcheck="false">' + esc(xml) + '</textarea>');
+    document.title = 'Sitemap · ' + state.cfg.titulo;
+    setMeta('name', 'robots', 'noindex, nofollow');
   }
 
   /* ---------------- Eventos ---------------- */
 
   function bindEvents() {
-    window.addEventListener('hashchange', route);
+    // Enlaces internos: cambian la dirección sin recargar la página
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest('a[href]');
+      if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+      var u;
+      try { u = new URL(a.getAttribute('href'), location.href); } catch (err) { return; }
+      if (u.origin !== location.origin || !samePage(u.pathname, location.pathname)) return;
+      if (u.hash && u.search === location.search) return; // ancla dentro de la misma vista (ej. #contacto)
+      e.preventDefault();
+      closeMenu();
+      if (u.href !== location.href) history.pushState(null, '', u.href);
+      route();
+    });
+    window.addEventListener('popstate', route);
+    window.addEventListener('hashchange', function () { if (/^#\//.test(location.hash)) route(); });
+
+    $('.head-contact').addEventListener('click', function (e) {
+      e.preventDefault();
+      closeMenu();
+      $('#contacto').scrollIntoView({ behavior: 'smooth' });
+    });
 
     $('.menu-toggle').addEventListener('click', function () {
       var nav = $('.site-nav');
@@ -858,7 +1109,8 @@
       this.setAttribute('aria-expanded', String(open));
     });
 
-    $('.nav-list').addEventListener('click', function (e) {
+    $$('.nav-list').forEach(function (list) { list.addEventListener('click', onNavClick); });
+    function onNavClick(e) {
       var t = e.target.closest('.sub-toggle');
       if (t) {
         e.preventDefault();
@@ -883,7 +1135,7 @@
         e.preventDefault();
         $('#contacto').scrollIntoView({ behavior: 'smooth' });
       }
-    });
+    }
 
     // Cierra los submenús al tocar fuera
     document.addEventListener('click', function (e) {
@@ -896,8 +1148,9 @@
       document.documentElement.dataset.theme = next;
       store('r7-modo', next);
       updateLogo();
+      updateThemeColor();
     });
-    matchMedia('(prefers-color-scheme: light)').addEventListener('change', updateLogo);
+    matchMedia('(prefers-color-scheme: light)').addEventListener('change', function () { updateLogo(); updateThemeColor(); });
 
     // Al tocar una flecha se ve completa 2 segundos; deslizar sobre el libro no la muestra
     $$('.book-arrow').forEach(function (btn) {
@@ -951,6 +1204,7 @@
   /* ---------------- Inicio de la app ---------------- */
 
   function start() {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     bindEvents();
     showMessage('', '', true);
     fetchText('config.txt').then(parseTxt).catch(function () { return {}; }).then(function (cfg) {
@@ -965,6 +1219,7 @@
       applyConfig(c);
       renderFooter();
       setupWhatsApp();
+      setupParallax();
       return loadTree();
     }).then(function (nodes) {
       state.tree = finishTree(nodes || [], null);

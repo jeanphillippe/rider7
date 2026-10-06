@@ -10,6 +10,7 @@
 
 #  ---------- Datos generales ----------
 titulo: Rider7
+# Descripción para Google (ideal: entre 120 y 160 caracteres, contando qué hacés y dónde)
 descripcion: Catálogos, revistas y galerías en formato libro.
 logo: logo.png
 # Logo alternativo para modo claro (opcional). Si lo dejás vacío se usa el mismo.
@@ -42,7 +43,8 @@ titulos_tamano: 100
 titulos_peso: 600
 
 # Cabecera (siempre en una fila, del alto del logo):
-#   centrada = logo a la izquierda y menú al centro | lateral = logo a la izquierda y menú a la derecha
+#   centrada = logo al medio y las secciones a los costados (en celular: menú a la izquierda y contacto a la derecha)
+#   lateral  = logo a la izquierda y menú a la derecha
 cabecera: centrada
 
 
@@ -52,6 +54,10 @@ inicio_titulo:
 inicio_texto:
 # Texto del botón de cada portada
 inicio_boton: Entrar
+# Efecto de profundidad al hacer scroll en las portadas: si | no
+parallax: si
+# Intensidad del efecto en porcentaje: 100 = suave, 200 = el doble, 300 = muy marcado (máximo 500)
+parallax_intensidad: 200
 
 
 #  ---------- Libro (flipbook) ----------
@@ -67,6 +73,11 @@ velocidad: 800
 desenfoque: 40
 # Color de las hojas (se ve si la imagen no cubre toda la página)
 color_hoja: #ffffff
+# Cómo se acomodan las imágenes con distinta proporción dentro de una misma carpeta:
+#   llenar   = todas las páginas iguales: amplía y recorta lo que sobra (recomendado)
+#   completa = muestra cada imagen entera, con bordes del color de la hoja si no coincide
+# La forma del libro la sigue definiendo la primera imagen. También se puede poner en el info.txt de una carpeta.
+ajuste: llenar
 
 
 #  ---------- Contacto (footer) ----------
@@ -79,8 +90,11 @@ telefono:
 whatsapp: 5492954000000
 # Botón verde flotante de WhatsApp (aparece a los 2 segundos): si | no
 whatsapp_boton: si
-# Mensaje que aparece ya escrito al abrir el chat (opcional)
-whatsapp_mensaje: Hola, vi el sitio y quería consultar
+# Mensaje que aparece ya escrito al abrir el chat desde el inicio
+whatsapp_mensaje: Hola! Quería consultar
+# Mensaje cuando la persona está viendo un libro o grupo. {titulo} se reemplaza por su nombre.
+# También podés usar {enlace} (la dirección de lo que está viendo) y {sitio} (el título del sitio)
+whatsapp_mensaje_libro: Hola! Quería consultar sobre {titulo} que vi en la web
 instagram: ejemplo
 facebook:
 tiktok:
@@ -88,10 +102,21 @@ youtube:
 linkedin:
 web:
 direccion: Santa Rosa, La Pampa, Argentina
-# Texto chico al pie
+# Texto chico al pie. Acepta HTML en una sola línea, por ejemplo una imagen alojada en otro lado:
+#   pie: © 2026 Mi marca <img src="https://otrositio.com/sello.png" alt="Sello"> <a href="https://...">Aviso legal</a>
 pie: © 2026 Rider7. Todos los derechos reservados.
 # Mostrar "Hecho con Rider7" al pie: si | no
 credito: si
+
+
+#  ---------- SEO (Google) ----------
+# Idioma del sitio (es, pt, en...)
+idioma: es
+# Tipo de negocio para Google (schema.org). Ejemplos: Organization, LocalBusiness, Store,
+# TattooParlor, BeautySalon, Restaurant, ProfessionalService, ArtGallery, Photograph
+seo_tipo: Organization
+# Imagen para compartir y para Google (vacío = la portada del primer libro)
+seo_imagen:
 
 
 #  ---------- De dónde salen las imágenes ----------
